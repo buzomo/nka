@@ -1,0 +1,361 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "BIZ UDGothic";
+}
+
+body {
+  font-family: sans-serif;
+  background-color: #fce4ec; /* パステルピンク */
+}
+
+.container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 25%;
+  background: #f8bbd0; /* パステルピンク */
+  padding: 20px;
+  border-right: 1px solid #f48fb1; /* パステルピンク */
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.content {
+  width: 50%;
+  padding: 40px;
+  height: 100vh;
+  overflow-y: auto;
+  background: #f3e5f5; /* パステルパープル */
+}
+
+.backlinks {
+  width: 25%;
+  background: #f8bbd0; /* パステルピンク */
+  padding: 20px;
+  border-left: 1px solid #f48fb1; /* パステルピンク */
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.page-list {
+  list-style: none;
+  overflow-y: scroll;
+  scrollbar-width: none; /* Firefox */
+}
+
+.page-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.page-list li {
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 1px solid #f48fb1; /* パステルピンク */
+  border-radius: 4px;
+  background: #fce4ec; /* パステルピンク */
+}
+
+.page-list li:hover {
+  background: #f3e5f5; /* パステルパープル */
+}
+
+.page-list .title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.page-list .preview {
+  font-size: 0.9em;
+  color: #ab47bc; /* パステルパープル */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+
+.page-list .thumbnail {
+  max-width: 100%;
+  height: auto;
+  margin-top: 8px;
+}
+
+.active {
+  background: #f3e5f5; /* パステルパープル */
+}
+
+#content-area {
+  width: 100%;
+  height: calc(100vh - 40px); /* 画面いっぱいの高さに設定 */
+  padding: 10px;
+  font-family: inherit;
+  border: 1px solid #f48fb1; /* パステルピンク */
+  resize: vertical;
+  display: none;
+  background: #fce4ec; /* パステルピンク */
+}
+
+#content-area.edit-mode {
+  border: none;
+  font-size: 1.1em;
+  line-height: 2em;
+}
+
+#content-area:focus {
+  border: none;
+}
+
+#preview-area {
+  padding: 10px;
+  height: 100%;
+  padding-bottom: 50px; /* 余裕を持たせるためのパディングを追加 */
+  position: relative; /* 相対位置を設定 */
+}
+
+#preview-area::after {
+  content: "";
+  display: block;
+  height: 50px; /* 余裕を持たせるためのダミー要素 */
+}
+
+#preview-area img {
+  max-width: 100%;
+}
+
+#preview-area p {
+  margin-bottom: 1.5em; /* 行間を広げる */
+  line-height: 1.5; /* 行間を広げる */
+}
+
+.search-box {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #f48fb1; /* パステルピンク */
+  border-radius: 4px;
+  background: #fce4ec; /* パステルピンク */
+}
+
+.button-group {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: row;
+}
+
+.button-group button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin: 0 5px;
+  opacity: 0.2;
+  transition: opacity 0.3s;
+}
+
+.button-group button:hover {
+  opacity: 1;
+}
+
+.button-group button i {
+  font-size: 24px;
+  color: #ab47bc; /* パステルパープル */
+}
+
+.button-group button:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 35px;
+  background: #ab47bc; /* パステルパープル */
+  color: #fff;
+  padding: 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  left: 50%;
+}
+
+.button-group button:last-child:hover::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+/* スタイル追加 */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 15px 25px;
+  border-radius: 8px;
+  color: white !important;
+  font-family: sans-serif;
+  background: #333; /* 背景色をグレーに変更 */
+}
+
+.toast-success {
+  background: #4caf50;
+}
+.toast-error {
+  background: #f44336;
+}
+.toast-warning {
+  background: #ff9800;
+}
+.toast-info {
+  background: #2196f3;
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+.auto-save-indicator {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  font-size: 0.8em;
+  color: #666;
+}
+
+.toast button {
+  background: none;
+  border: none;
+  color: #ff9800;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+/* Marked.jsによるプレビューのスタイル */
+#preview-area h1,
+#preview-area h2,
+#preview-area h3,
+#preview-area h4,
+#preview-area h5,
+#preview-area h6 {
+  margin-top: 1.5em; /* 行間を広げる */
+  margin-bottom: 1em; /* 行間を広げる */
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+h2 {
+  margin-bottom: 1em !important;
+}
+
+#preview-area p {
+  margin-bottom: 1.5em; /* 行間を広げる */
+}
+
+#preview-area ul,
+#preview-area ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+  line-height: 2em;
+  letter-spacing: 2px;
+}
+
+#preview-area blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 4px solid #ab47bc; /* パステルパープル */
+  color: #555;
+}
+
+#preview-area code {
+  background: #f3e5f5; /* パステルパープル */
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+}
+
+.copy-sign {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #ab47bc; /* パステルパープル */
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  font-size: 14px;
+}
+
+a {
+  color: #165c16; /* 蛍光グリーン */
+  font-weight: bold;
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3%;
+    background: rgba(248, 187, 208, 0.9); /* 半透明の背景 */
+    z-index: 1000;
+  }
+
+  .sidebar:focus-within {
+    height: 70%;
+  }
+
+  .sidebar .search-box {
+    background: rgba(248, 187, 208, 0.9); /* 半透明の背景 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1001; /* 常に最前面に表示 */
+  }
+
+  .sidebar .page-list {
+    margin-top: 50px; /* search-box の高さ分の余白を追加 */
+  }
+
+  .content {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .backlinks {
+    width: 100%;
+    height: auto;
+    border-left: none;
+    border-top: 1px solid #f48fb1; /* パステルピンク */
+  }
+
+  .toggle-search-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    background: #ab47bc; /* パステルパープル */
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002; /* search-box より前面に表示 */
+    cursor: pointer;
+  }
+
+  .toggle-search-button.hidden {
+    display: none;
+  }
+}
