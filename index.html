@@ -71,7 +71,8 @@
                     {
                         headers: {
                             'Authorization': `token ${apiKey}`,
-                            'Accept': 'application/vnd.github.v3+json'
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Accept-Charset': 'utf-8'
                         }
                     }
                 );
@@ -602,7 +603,7 @@
                             },
                             body: JSON.stringify({
                                 message: `Auto-save ${new Date().toISOString()}`,
-                                content: base64EncodeUnicode(JSON.stringify(content, null, 2)), // 修正箇所
+                                content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))), // 修正箇所
                                 sha: sha
                             }),
                             signal: controller.signal
