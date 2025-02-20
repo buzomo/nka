@@ -88,6 +88,11 @@
                 Object.entries(remotePages).forEach(([title, pageData]) => {
                     if (!localPages[title] || new Date(pageData.LastUpdated) > new Date(localPages[title].LastUpdated)) {
                         localPages[title] = pageData;
+                    } else if (new Date(pageData.LastUpdated) <= new Date(localPages[title].LastUpdated)) {
+                        const localLines = localPages[title].content.split('\n');
+                        if (localLines.length <= 2 && localLines[1] === '') {
+                            localPages[title] = pageData;
+                        }
                     }
                 });
 
