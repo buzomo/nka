@@ -86,11 +86,12 @@
 
                 // リモートとローカルのLastUpdatedを比較し、新しい方を残す
                 Object.entries(remotePages).forEach(([title, pageData]) => {
-                    if (!localPages[title] || new Date(pageData.LastUpdated) > new Date(localPages[title].LastUpdated)) {
+                    const localPage = localPages[title];
+                    if (!localPage || new Date(pageData.LastUpdated) > new Date(localPage.LastUpdated)) {
                         localPages[title] = pageData;
-                    } else if (new Date(pageData.LastUpdated) <= new Date(localPages[title].LastUpdated)) {
-                        const localLines = localPages[title].content.split('\n');
-                        if (localLines.length <= 2 && localLines[1] === '') {
+                    } else if (new Date(pageData.LastUpdated) <= new Date(localPage.LastUpdated)) {
+                        const localLines = localPage.content.split('\n');
+                        if (localLines.length <= 2) {
                             localPages[title] = pageData;
                         }
                     }
