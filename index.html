@@ -81,7 +81,7 @@
                     return;
                 }
                 const data = await response.json();
-                const remotePages = JSON.parse(atob(data.content));
+                const remotePages = JSON.parse(decodeURIComponent(escape(atob(data.content))));
                 const localPages = JSON.parse(localStorage.getItem('pages')) || {};
 
                 // リモートとローカルのLastUpdatedを比較し、新しい方を残す
