@@ -86,14 +86,8 @@
 
                 // リモートとローカルのLastUpdatedを比較し、新しい方を残す
                 Object.entries(remotePages).forEach(([title, pageData]) => {
-                    const localPage = localPages[title];
-                    if (!localPage || new Date(pageData.LastUpdated) > new Date(localPage.LastUpdated)) {
+                    if (!localPages[title] || new Date(pageData.LastUpdated) > new Date(localPages[title].LastUpdated)) {
                         localPages[title] = pageData;
-                    } else if (new Date(pageData.LastUpdated) <= new Date(localPage.LastUpdated)) {
-                        const localLines = localPage.content.split('\n');
-                        if (localLines.length <= 2) {
-                            localPages[title] = pageData;
-                        }
                     }
                 });
 
@@ -399,15 +393,190 @@
             }, 10);
         }
 
+        // 編集関連機能モジュール
+        const Editor = (() => {
+            const contentArea = document.getElementById('content-area');
+            let isSmartMode = true;
+
+            function addBulletPoint() {
+                const lines = contentArea.value.split('\n');
+                const cursorPosition = contentArea.selectionStart;
+                const currentLine = lines[lines.length - 1];
+
+                if (lines.length === 1 && lines[0].startsWith('# ')) {
+                    contentArea.value += '\n- ';
+                    contentArea.setSelectionRange(contentArea.value.length, contentArea.value.length);
+                } else if (lines.length === 2 && lines[0].startsWith('# ') && lines[1] === '') {
+                    contentArea.value += '- ';
+                    contentArea.setSelectionRange(contentArea.value.length, contentArea.value.length);
+                } else if (currentLine.startsWith('- ')) {
+                    const indent = currentLine.match(/^\s*/)[0];
+                    contentArea.value = contentArea.value.substring(0, cursorPosition) + '\n' + indent + '- ' + contentArea.value.substring(cursorPosition);
+                    contentArea.setSelectionRange(cursorPosition + indent.length + 3, cursorPosition + indent.length + 3);
+                } else if (currentLine === '') {
+                    const previousLine = lines[lines.length - 2];
+                    if (previousLine.startsWith('- ')) {
+                        const indent = previousLine.match(/^\s*/)[0];
+                        contentArea.value = contentArea.value.substring(0, cursorPosition) + '\n' + indent + '- ' + contentArea.value.substring(cursorPosition);
+                        contentArea.setSelectionRange(cursorPosition + indent.length + 3, cursorPosition + indent.length + 3);
+                    } else if (previousLine === '') {
+                        contentArea.value = contentArea.value.substring(0, cursorPosition) + '\n\n# ' + contentArea.value.substring(cursorPosition);
+                        contentArea.setSelectionRange(cursorPosition + 4, cursorPosition + 4);
+                    }
+                }
+            }
+
+            function toggleMode() {
+                isSmartMode = !isSmartMode;
+                if (isSmartMode) {
+                    contentArea.classList.add('smart-mode-cursor');
+                    contentArea.classList.remove('plain-text-mode-cursor');
+                } else {
+                    contentArea.classList.add('plain-text-mode-cursor');
+                    contentArea.classList.remove('smart-mode-cursor');
+                }
+            }
+
+            function smartModeHandler(e) {
+                if (e.key === 'Enter') {
+                    const cursorPosition = contentArea.selectionStart;
+                    const textBeforeCursor = contentArea.value.substring(0, cursorPosition);
+                    const textAfterCursor = contentArea.value.substring(cursorPosition);
+                    const currentLine = textBeforeCursor.split('\n').pop();
+
+                    if (currentLine.startsWith('# ')) {
+                        e.preventDefault();
+                        contentArea.value = textBeforeCursor + '\n- ' + textAfterCursor;
+                        contentArea.setSelectionRange(cursorPosition + 3, cursorPosition + 3);
+                    } else if (currentLine.startsWith('- ') && currentLine !== '- ') {
+                        e.preventDefault();
+                        contentArea.value = textBeforeCursor + '\n- ' + textAfterCursor;
+                        contentArea.setSelectionRange(cursorPosition + 3, cursorPosition + 3);
+                    } else if (currentLine === '- ') {
+                        e.preventDefault();
+                        contentArea.value = textBeforeCursor + '\n\n# ' + textAfterCursor;
+                        contentArea.setSelectionRange(cursorPosition + 4, cursorPosition + 4);
+                    }
+                }
+            }
+
+            function handleTabIndentation(event) {
+                if (event.key === "Tab") {
+                    event.preventDefault();
+                    const start = contentArea.selectionStart,
+                        end = contentArea.selectionEnd,
+                        before = contentArea.value.slice(0, start),
+                        after = contentArea.value.slice(end),
+                        lineStart = before.lastIndexOf("\n") + 1,
+                        lineEnd = end + after.indexOf("\n"),
+                        selectedLines = contentArea.value.slice(lineStart, lineEnd).split("\n");
+                    if (event.shiftKey) {
+                        const newText = selectedLines
+                            .map((line) => (line.startsWith("  ") ? line.slice(2) : line))
+                            .join("\n");
+                        contentArea.value = contentArea.value.slice(0, lineStart) + newText + contentArea.value.slice(lineEnd);
+                        const newCursorPosition = start - 2 * selectedLines.filter((line) => line.startsWith("  ")).length;
+                        contentArea.selectionStart = newCursorPosition;
+                        contentArea.selectionEnd = newCursorPosition;
+                    } else {
+                        const newText = selectedLines.map((line) => "  " + line).join("\n");
+                        contentArea.value = contentArea.value.slice(0, lineStart) + newText + contentArea.value.slice(lineEnd);
+                        const newCursorPosition = start + 2 * selectedLines.length;
+                        contentArea.selectionStart = newCursorPosition;
+                        contentArea.selectionEnd = newCursorPosition;
+                    }
+                }
+            }
+
+            function init() {
+                contentArea.addEventListener('input', () => {
+                    updatePreview();
+                    updateBacklinks(); // バックリンクの更新を追加
+                });
+                contentArea.addEventListener('focus', () => {
+                    contentArea.style.display = 'block';
+                    previewArea.style.display = 'none';
+                    contentArea.classList.add('edit-mode');
+                    addBulletPoint();
+                });
+                contentArea.addEventListener('blur', () => {
+                    contentArea.style.display = 'none';
+                    previewArea.style.display = 'block';
+                    contentArea.classList.remove('edit-mode');
+                });
+                contentArea.addEventListener('keydown', (e) => {
+                    if (isSmartMode) {
+                        smartModeHandler(e);
+                    }
+                    handleTabIndentation(e);
+                });
+
+                previewArea.addEventListener('click', () => {
+                    contentArea.style.display = 'block';
+                    previewArea.style.display = 'none';
+                    contentArea.classList.add('edit-mode');
+                    contentArea.focus();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!contentArea.contains(e.target) && !previewArea.contains(e.target)) {
+                        contentArea.style.display = 'none';
+                        previewArea.style.display = 'block';
+                        contentArea.classList.remove('edit-mode');
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && !contentArea.matches(':focus')) {
+                        toggleMode();
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'k') {
+                        e.preventDefault();
+                        document.getElementById('search-box').focus();
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (!contentArea.matches(':focus') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                        document.getElementById('search-box').focus();
+                    }
+                });
+
+                if (isSmartMode) {
+                    contentArea.classList.add('smart-mode-cursor');
+                } else {
+                    contentArea.classList.add('plain-text-mode-cursor');
+                }
+            }
+
+            return {
+                init,
+                toggleMode,
+                addBulletPoint,
+                smartModeHandler,
+                handleTabIndentation
+            };
+        })();
+
         // タイトルのみが表示されている状態で2行目に"- "を追記し、カーソルをその末尾に移動
         function addBulletPoint() {
             const lines = contentArea.value.split('\n');
+            const cursorPosition = contentArea.selectionStart;
+            const currentLine = lines[lines.length - 1];
+
             if (lines.length === 1 && lines[0].startsWith('# ')) {
-                contentArea.value += '\n- ';
-                contentArea.setSelectionRange(contentArea.value.length, contentArea.value.length);
+            contentArea.value += '\n- ';
+            contentArea.setSelectionRange(contentArea.value.length, contentArea.value.length);
             } else if (lines.length === 2 && lines[0].startsWith('# ') && lines[1] === '') {
-                contentArea.value += '- ';
-                contentArea.setSelectionRange(contentArea.value.length, contentArea.value.length);
+            contentArea.value += '- ';
+            contentArea.setSelectionRange(contentArea.value.length, contentArea.value.length);
+            } else if (currentLine.startsWith('- ')) {
+            const indent = currentLine.match(/^\s*/)[0];
+            contentArea.value = contentArea.value.substring(0, cursorPosition) + '\n' + indent + '- ' + contentArea.value.substring(cursorPosition);
+            contentArea.setSelectionRange(cursorPosition + indent.length + 3, cursorPosition + indent.length + 3);
             }
         }
 
@@ -513,6 +682,34 @@
         contentArea.addEventListener('keydown', (e) => {
             if (isSmartMode) {
                 smartModeHandler(e);
+            }
+        });
+        // タブキーでインデントの前後ができるようにする
+        contentArea.addEventListener('keydown', (event) => {
+            if (event.key === "Tab") {
+            event.preventDefault();
+            const start = contentArea.selectionStart,
+                end = contentArea.selectionEnd,
+                before = contentArea.value.slice(0, start),
+                after = contentArea.value.slice(end),
+                lineStart = before.lastIndexOf("\n") + 1,
+                lineEnd = end + after.indexOf("\n"),
+                selectedLines = contentArea.value.slice(lineStart, lineEnd).split("\n");
+            if (event.shiftKey) {
+                const newText = selectedLines
+                .map((line) => (line.startsWith("  ") ? line.slice(2) : line))
+                .join("\n");
+                contentArea.value = contentArea.value.slice(0, lineStart) + newText + contentArea.value.slice(lineEnd);
+                const newCursorPosition = start - 2 * selectedLines.filter((line) => line.startsWith("  ")).length;
+                contentArea.selectionStart = newCursorPosition;
+                contentArea.selectionEnd = newCursorPosition;
+            } else {
+                const newText = selectedLines.map((line) => "  " + line).join("\n");
+                contentArea.value = contentArea.value.slice(0, lineStart) + newText + contentArea.value.slice(lineEnd);
+                const newCursorPosition = start + 2 * selectedLines.length;
+                contentArea.selectionStart = newCursorPosition;
+                contentArea.selectionEnd = newCursorPosition;
+            }
             }
         });
 
@@ -712,6 +909,7 @@
         // 初期化処理
         document.addEventListener('DOMContentLoaded', () => {
             AutoSaveManager.init();
+            Editor.init();
 
             const repoUrl = localStorage.getItem('repo_url');
             const apiKey = localStorage.getItem('gh_token');
